@@ -2,15 +2,22 @@
 pragma solidity 0.8.14;
 
 import "forge-std/Test.sol";
+import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
+import { Namehash } from "../src/Namehash.sol";
+import { NFT } from "../test/mocks/NFT.sol";
 import { Resolver } from "../src/Resolver.sol";
 
 contract ResolverTest is Test {
 
     Resolver public resolver;
+    bytes public basename;
+    NFT public nft;
 
     function setUp() public {
-        resolver = new Resolver();
+        nft = new NFT("Not Fungible Token", "NFT");
+        basename = "mynftens.eth";
+        resolver = new Resolver(basename, nft);
     }
 
     function testSupportsInterfaceTrue() public {
@@ -24,7 +31,13 @@ contract ResolverTest is Test {
     }
 
     function testAddr() public {
-        address resolved = resolver.addr(keccak256("test"));
-        assertEq(resolved, address(resolver));
+        uint256 id = 7;
+        address guy = address(0x1234);
+        nft.mint(guy, id);
+        resolver.setup(id);
+
+        bytes32 node = Namehash.namehash(bytes(Strings.toString(id)), basename, "eth");
+        address resolved = resolver.addr(node);
+        assertEq(resolved, guy);
     }
 }
